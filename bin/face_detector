@@ -65,7 +65,7 @@ def run_face_detect():
 					my_roi.y_offset = y
 					my_roi.height = h
 					my_roi.width = w
-				#TODO only publish closes image
+
 				cv2.rectangle(face_pic,(x,y),(x+w,y+h),(255,0,0),2)
 
 
