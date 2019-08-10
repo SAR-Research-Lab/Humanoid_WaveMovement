@@ -54,6 +54,8 @@ def run_face_detect():
 		center_y        = 0
 		pic_y           = 0
 		pic_x           = 0
+		roi_center_x    = 0
+		roi_center_y    = 0
 
 		if face_pic is not None:
 			gray = cv2.cvtColor(face_pic, cv2.COLOR_BGR2GRAY)
@@ -72,21 +74,24 @@ def run_face_detect():
 			my_point.y = center_y
 
 			for (x,y,w,h) in faces:
-				print x
-				print y
-				print w
-				print h
 				#Determine if this face is the closest
 				current_area = w*h
 				if(current_area > max_area):
 					max_area = current_area
 					my_roi.x_offset = x
 					my_roi.y_offset = y
-					my_roi.height = h
-					my_roi.width = w
-
-				cv2.rectangle(face_pic,(x,y),(x+w,y+h),(255,0,0),2)
-
+					my_roi.height   = h
+					my_roi.width    = w
+					roi_center_x    = (x + w/2)
+					roi_center_y    = (y + h/2)
+					print "x, y, w, h"
+					print x
+					print y
+					print w
+					print h
+					#Draw rectangle and center of rectangle on the closest image
+					cv2.rectangle(face_pic,(x,y),(x+w,y+h),(255,0,0),2)
+					cv2.circle(face_pic, (roi_center_x, roi_center_y), 5, (0,0,255), -1)
 
 		#Publish the region of interest and points
 		point_pub.publish(my_point)
