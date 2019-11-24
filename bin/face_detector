@@ -1,0 +1,118 @@
+#!/usr/bin/env python
+import rospy
+import numpy as np
+import cv2
+import time
+from threading import Thread
+from sensor_msgs.msg import Image, RegionOfInterest
+from geometry_msgs.msg import Point
+from cv_bridge import CvBridge, CvBridgeError
+
+
+
+def image_callback(data, args):
+	global face_pic
+	#print "Image received!"
+	try:
+		face_pic = args.imgmsg_to_cv2(data, "bgr8")
+	except CvBridgeError as e:
+		print(e)
+
+def face_detect_init():
+	# Set up a new node for facial detection
+	rospy.init_node('robo_face_detect', anonymous=True)
+
+	#Create the ROS Image to OpenCV bridge
+	myBridge = CvBridge()
+
+	#Subscribe to the image topic to receive image data
+	image_subscriber = rospy.Subscriber('/right/image_rect_gray', Image, image_callback, (myBridge))
+
+def run_face_detect(): 
+	global face_pic
+
+	#Initialize the Region of Interest and center point for publishing
+	my_roi = RegionOfInterest()
+	my_point = Point()
+	roi_pub = rospy.Publisher("/roi", RegionOfInterest, queue_size = 1)
+	point_pub = rospy.Publisher("/geometry_msgs", Point, queue_size = 1)
+	face_pic = None
+
+	face_cascade = cv2.CascadeClassifier('/home/rebecca/projects/ECE591_WS/src/face_detect/bin/haarcascade_frontalface_default.xml')
+	#img = cv2.imread('/home/rebecca/projects/ECE591_WS/src/face_detect/bin/rebecca.jpg')
+
+	while not rospy.is_shutdown():
+
+		#Initialize ROI to known values and always publish even when face is not detected
+		my_roi.x_offset = 0
+		my_roi.y_offset = 0
+		my_roi.height   = 0
+		my_roi.width    = 0
+		max_area        = 0
+		current_area    = 0
+		center_x        = 0
+		center_y        = 0
+		pic_y           = 0
+		pic_x           = 0
+		roi_center_x    = 0
+		roi_center_y    = 0
+
+		if face_pic is not None:
+			gray = cv2.cvtColor(face_pic, cv2.COLOR_BGR2GRAY)
+			faces = face_cascade.detectMultiScale(gray, 1.3, 5)
+
+			#Get the center of the picture
+			pic_y      = face_pic.shape[0]
+			pic_x      = face_pic.shape[1]
+			center_x   = pic_x/2
+			center_y   = pic_y/2
+
+			#Draw a line in the center of the pic
+			cv2.line(face_pic, (center_x, 0), (center_x, pic_y), (0, 255, 0), 2)
+			
+			my_point.x = center_x
+			my_point.y = center_y
+
+			for (x,y,w,h) in faces:
+				#Determine if this face is the closest
+				current_area = w*h
+				if(current_area > max_area):
+					max_area = current_area
+					my_roi.x_offset = x
+					my_roi.y_offset = y
+					my_roi.height   = h
+					my_roi.width    = w
+					roi_center_x    = (x + w/2)
+					roi_center_y    = (y + h/2)
+					print "x, y, w, h"
+					print x
+					print y
+					print w
+					print h
+					#Draw rectangle and center of rectangle on the closest image
+					cv2.rectangle(face_pic,(x,y),(x+w,y+h),(255,0,0),2)
+					cv2.circle(face_pic, (roi_center_x, roi_center_y), 5, (0,0,255), -1)
+
+		#Publish the region of interest and points
+		point_pub.publish(my_point)
+		roi_pub.publish(my_roi)
+
+		#Diagnostics show the image
+		if(face_pic is not None): 
+			cv2.imshow('Smile!', face_pic)
+
+		#Wait 10ms before next process
+		cv2.waitKey(10)
+
+	cv2.destroyAllWindows()	
+
+
+if __name__ == '__main__':
+	try:
+		#Initialize the face detection node
+		face_detect_init()
+
+		#Run the face detection
+		run_face_detect()
+	except rospy.ROSInterruptException:
+		quit()
