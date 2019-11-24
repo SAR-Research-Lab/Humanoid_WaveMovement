@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 2.8.3)
-project(face_detect)
+project(arm_movement)
 
 ## Compile as C++11, supported in ROS Kinetic and newer
 # add_compile_options(-std=c++11)
@@ -201,7 +201,7 @@ include_directories(
 #   DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
 # )
 
-catkin_install_python(PROGRAMS bin/face_detector
+catkin_install_python(PROGRAMS bin/arm_movement
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
 
 #############

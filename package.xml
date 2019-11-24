@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <package format="2">
-  <name>face_detect</name>
+  <name>arm_movement</name>
   <version>0.0.0</version>
   <description>The face detection package</description>
 
